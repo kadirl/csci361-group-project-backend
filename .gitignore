@@ -16,3 +16,7 @@ myenv/
 .idea/
 *.swp
 
+
+# macos trash
+.Trash/
+.DS_Store
