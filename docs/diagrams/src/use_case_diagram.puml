@@ -1,4 +1,8 @@
-@startuml Use Case Diagram - SCP
+@startuml Use Case Diagram
+
+' How to read and write:
+' https://plantuml.com/en-dark/use-case-diagram
+
 left to right direction
 
 skinparam packageStyle rectangle
