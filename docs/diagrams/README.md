@@ -101,11 +101,34 @@ User -> (Login)
 - [Real World PlantUML Examples](https://real-world-plantuml.com/)
 - [PlantUML Cheat Sheet](https://ogom.github.io/draw_uml/plantuml/)
 
+## Export Script (Batch Export)
+
+A convenience script is available at the project root to export all diagrams at once:
+
+```bash
+# Export all diagrams as SVG (default)
+./export-diagrams.sh
+
+# Export all diagrams as PNG
+./export-diagrams.sh -png
+
+# Export all diagrams as PDF
+./export-diagrams.sh -pdf
+
+# Export all diagrams as JPEG
+./export-diagrams.sh -jpeg
+```
+
+The script will:
+- Find all `.puml`, `.plantuml`, and `.uml` files in `src/`
+- Export them to the `out/` directory
+- Show progress and confirmation
+
 ## Recommended Workflow
 
 1. Write `.uml` source in `src/` folder
-2. Use PlantUML extension with hot reload (⌥ + D)
-3. Export final diagrams to `out/` folder
+2. Use PlantUML extension with hot reload (⌥ + D) for development
+3. Run `./export-diagrams.sh` to batch export all diagrams
 4. Reference exported images in documentation
-5. Version control both source and outputs
+5. Version control both source and outputs (out folder is tracked in git)
 
