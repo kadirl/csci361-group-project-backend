@@ -65,10 +65,10 @@ WebChat -[#blue]-> ChatAPI
 
 ' === Connections from Mobile App to Backend ===
 MobileCatalogs -[#red]-> CatalogsAPI
-MobileOrders -[#red]-> OrdersAPI
-MobileComplaints -[#red]-> ComplaintAPI
-MobileAuth -[#red]-> AuthAPI
-MobileLink -[#red]-> LinkAPI
-MobileChat -[#red]-> ChatAPI
+MobileOrders -[#orange]-> OrdersAPI
+MobileComplaints -[#yellow]-> ComplaintAPI
+MobileAuth -[#green]-> AuthAPI
+MobileLink -[#cyan]-> LinkAPI
+MobileChat -[#purple]-> ChatAPI
 
 @enduml
