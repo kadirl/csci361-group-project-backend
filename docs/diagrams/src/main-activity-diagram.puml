@@ -1,0 +1,65 @@
+@startuml
+title Main Activity Diagram
+
+start
+
+:User opens app;
+:User logs in;
+
+if (User role?) then (Consumer)
+  :View supplier list;
+  :Send link request to supplier;
+  if (Supplier approves link?) then (Yes)
+    :View supplier catalog;
+    :Add products to cart;
+    :Submit order;
+
+    :Supplier receives order notification;
+    if (Supplier accepts order?) then (Accepted)
+      :Update stock;
+      :Change order status to "Processing";
+      :Prepare and ship order;
+      :Consumer tracks order status;
+      :Order completed;
+    else (Rejected)
+      :Notify consumer of rejection;
+    endif
+
+    :Consumer checks delivered products;
+    if (Satisfied?) then (Yes)
+      :Close order;
+    else (No)
+      :File complaint;
+      :Sales Representative reviews complaint;
+      if (Resolved?) then (Yes)
+        :Mark complaint as resolved;
+      else (No)
+        :Escalate to Manager;
+        :Manager reviews and resolves issue;
+      endif
+    endif
+
+  else (Rejected)
+    :Consumer notified of rejection;
+  endif
+
+else (Supplier)
+  :Review link requests;
+  if (Approve request?) then (Yes)
+    :Approve and assign salesman;
+    :Consumer gains access to catalog;
+  else (Reject)
+    :Reject link request;
+  endif
+  :Manage catalog (add/edit/remove products);
+  :Handle incoming orders;
+  :Respond to complaints and messages;
+endif
+
+:User may open chat linked to order/link;
+:Exchange messages (text, file, audio);
+:End communication;
+
+stop
+@enduml
+
