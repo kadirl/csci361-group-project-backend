@@ -1,5 +1,4 @@
-@startuml
-title Component Diagram
+@startuml Component Diagram
 ' === Frontend components ===
 component "Web Frontend (Supplier)" <<frontend>> {
     [Catalogs Page] as WebCatalogs
