@@ -2,10 +2,11 @@
 
 # Script to export all PlantUML diagrams to specified format
 # Usage: ./export-diagrams.sh [-png|-svg|-pdf]
-# Default: SVG
+# Default: PDF (via SVG conversion)
 
 # Default format
-FORMAT="svg"
+FORMAT="pdf"
+USE_SVG_CONVERSION=false
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -75,6 +76,27 @@ fi
 echo "Found $DIAGRAM_COUNT diagram file(s)"
 echo ""
 
+# Check if PDF conversion tool is available
+if [ "$FORMAT" = "pdf" ]; then
+    if command -v rsvg-convert &> /dev/null; then
+        USE_SVG_CONVERSION=true
+        CONVERTER="rsvg-convert"
+        echo "Using rsvg-convert for PDF generation"
+    elif command -v inkscape &> /dev/null; then
+        USE_SVG_CONVERSION=true
+        CONVERTER="inkscape"
+        echo "Using Inkscape for PDF generation"
+    else
+        echo "Warning: PDF export requires either 'rsvg-convert' or 'inkscape'"
+        echo "Install with: brew install librsvg    (for rsvg-convert)"
+        echo "         or: brew install inkscape"
+        echo ""
+        echo "Attempting direct PDF export (may fail without Apache Batik)..."
+        USE_SVG_CONVERSION=false
+    fi
+    echo ""
+fi
+
 # Export diagrams (using source filename)
 # PlantUML -o expects relative path from input files
 cd "$SRC_DIR" || exit 1
@@ -86,17 +108,45 @@ for file in *.puml *.plantuml *.uml; do
         # Get base filename without extension
         basename="${file%.*}"
         
-        # Export diagram
-        java -jar "$JAR_FILE" -t"$FORMAT" -o "../out" "$file"
-        
-        # Find the generated file and rename it to match source filename
-        # PlantUML generates files based on @startuml name, so we need to find and rename
-        latest_file=$(ls -t "../out/"*."$FORMAT" 2>/dev/null | head -n 1)
-        if [ -n "$latest_file" ]; then
-            target_file="../out/${basename}.${FORMAT}"
-            # Only rename if it's not already the correct name
-            if [ "$latest_file" != "$target_file" ]; then
-                mv "$latest_file" "$target_file" 2>/dev/null || true
+        # If PDF via SVG conversion, export to SVG first
+        if [ "$USE_SVG_CONVERSION" = true ]; then
+            # Export to SVG first
+            java -jar "$JAR_FILE" -tsvg -o "../out" "$file"
+            
+            # Find the generated SVG file
+            latest_svg=$(ls -t "../out/"*.svg 2>/dev/null | head -n 1)
+            if [ -n "$latest_svg" ]; then
+                target_svg="../out/${basename}.svg"
+                # Rename to match source filename
+                if [ "$latest_svg" != "$target_svg" ]; then
+                    mv "$latest_svg" "$target_svg" 2>/dev/null || true
+                fi
+                
+                # Convert SVG to PDF
+                target_pdf="../out/${basename}.pdf"
+                if [ "$CONVERTER" = "rsvg-convert" ]; then
+                    rsvg-convert -f pdf -o "$target_pdf" "$target_svg"
+                elif [ "$CONVERTER" = "inkscape" ]; then
+                    inkscape "$target_svg" --export-filename="$target_pdf" --export-type=pdf 2>/dev/null
+                fi
+                
+                # Remove temporary SVG file
+                rm "$target_svg" 2>/dev/null || true
+                
+                echo "  → Generated: ${basename}.pdf"
+            fi
+        else
+            # Direct export to specified format
+            java -jar "$JAR_FILE" -t"$FORMAT" -o "../out" "$file"
+            
+            # Find the generated file and rename it to match source filename
+            latest_file=$(ls -t "../out/"*."$FORMAT" 2>/dev/null | head -n 1)
+            if [ -n "$latest_file" ]; then
+                target_file="../out/${basename}.${FORMAT}"
+                # Only rename if it's not already the correct name
+                if [ "$latest_file" != "$target_file" ]; then
+                    mv "$latest_file" "$target_file" 2>/dev/null || true
+                fi
             fi
         fi
     fi
