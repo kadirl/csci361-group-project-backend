@@ -1,0 +1,221 @@
+@startuml Class Diagram
+
+' Class diagram for Supplier Consumer Platform (SCP)
+' Based on SRS v2.0 and database schema
+
+' left to right direction
+skinparam linetype ortho
+
+' Make diagram denser
+skinparam ranksep 40
+skinparam nodesep 40
+skinparam padding 4
+skinparam classAttributeIconSize 0
+
+
+' User and Company classes
+class User {
+    - user_id: Long
+    - company_id: Long
+    - status: String {"active", "suspended"}
+    - first_name: String
+    - last_name: String
+    - phone_number: String
+    - email: String
+    - password: String
+    - role: String {"owner", "manager", "staff"}
+    - createdAt: DateTime
+    - locale: String {"ru", "en", "kz"}
+    __
+    + login(email: String, password: String): Boolean
+    + authenticate(): Boolean
+    + hasPermission(action: String): Boolean
+    + updateProfile(data: UserData): void
+    + changePassword(oldPassword: String, newPassword: String): Boolean
+    + activate(): void
+    + suspend(): void
+}
+
+class Company {
+    - company_id: Long
+    - status: String {"active", "suspended"}
+    - name: String
+    - description: String
+    - logo_url: String
+    - location: String
+    - type: String {"supplier", "consumer"}
+    __
+    + activate(): void
+    + suspend(): void
+    + updateInfo(data: CompanyData): void
+    + delete(): void
+    + getUsers(): List<User>
+    + addUser(user: User): void
+    + removeUser(userId: Long): void
+}
+
+' Product class
+class Product {
+    - product_id: Long
+    - company_id: Long
+    - name: String
+    - description: String
+    - picture_urls: List<String>
+    - stock: Integer
+    - retail_price: Decimal
+    - threshold: Integer
+    - bulk_price: Decimal
+    - minimum_order: Integer
+    - unit: String
+    __
+    + updateStock(quantity: Integer): void
+    + setPrice(retailPrice: Decimal, bulkPrice: Decimal): void
+    + setMinimumOrder(quantity: Integer): void
+    + isAvailable(): Boolean
+    + checkStock(requestedQuantity: Integer): Boolean
+    + applyDiscount(percentage: Decimal): void
+}
+
+' Linking class
+class Linking {
+    - linking_id: Long
+    - consumer_company_id: Long
+    - supplier_company_id: Long
+    - requested_by_user_id: Long
+    - responded_by_user_id: Long
+    - assigned_salesman_id: Long
+    - status: String {"pending", "accepted", "rejected", "unlinked"}
+    - message: String
+    - createdAt: DateTime
+    - updatedAt: DateTime
+    __
+    + approve(salesmanId: Long): void
+    + reject(reason: String): void
+    + unlink(): void
+    + assignSalesman(salesmanId: Long): void
+    + isPending(): Boolean
+    + isActive(): Boolean
+}
+
+' Order classes
+class Order {
+    - order_id: Long
+    - linking_id: Long
+    - consumer_staff_id: Long
+    - total_price: Decimal
+    - status: String {"created", "processing", "shipping", "completed"}
+    __
+    + create(): void
+    + accept(): void
+    + reject(reason: String): void
+    + updateStatus(newStatus: String): void
+    + calculateTotal(): Decimal
+    + track(): String
+    + addProduct(product: Product, quantity: Integer, price: Decimal): void
+    + getProducts(): List<OrderProduct>
+}
+
+class OrderProduct {
+    - order_id: Long
+    - product_id: Long
+    - product_quantity: Integer
+    - product_price: Decimal
+    __
+    + updateQuantity(quantity: Integer): void
+    + getSubtotal(): Decimal
+    + validateStock(): Boolean
+}
+
+' Chat and Message classes
+class Chat {
+    - chat_id: Long
+    - linking_id: Long
+    - order_id: Long
+    - createdAt: DateTime
+    __
+    + create(): void
+    + getMessages(): List<Message>
+    + sendMessage(senderId: Long, type: String, body: String): Message
+}
+
+class Message {
+    - message_id: Long
+    - chat_id: Long
+    - sender_id: Long
+    - type: String {"text", "audio", "image", "file"}
+    - body: String
+    - sent_at: DateTime
+    __
+    + send(): void
+    + markAsRead(): void
+    + attachFile(fileUrl: String): void
+}
+
+' Complaint classes
+class Complaint {
+    - complaint_id: Long
+    - order_id: Long
+    - raised_by_user_id: Long
+    - assigned_to_salesman_id: Long
+    - escalated_to_manager_id: Long
+    - escalated_to_owner_id: Long
+    - status: String {"open", "in_progress", "escalated", "resolved", "closed"}
+    - description: String
+    - resolution_notes: String
+    - createdAt: DateTime
+    - updatedAt: DateTime
+    __
+    + submit(): void
+    + escalate(managerId: Long): void
+    + escalateToOwner(ownerId: Long): void
+    + resolve(notes: String): void
+    + close(): void
+    + assignTo(userId: Long): void
+    + addNote(note: String): void
+}
+
+class ComplaintHistory {
+    - history_id: Long
+    - complaint_id: Long
+    - changed_by_user_id: Long
+    - new_status: String {"open", "in_progress", "escalated", "resolved", "closed"}
+    - notes: String
+    - updatedAt: DateTime
+    __
+    + log(status: String, notes: String): void
+}
+
+' Relationships
+
+' Company employs Users (composition)
+Company "1" *-- "many" User : employs
+
+' Company offers Products (composition)
+Company "1" *-- "0..*" Product : offers
+
+' Linking relationships (association)
+Company "1" o-- "0..*" Linking : acts as supplier
+Company "1" o-- "0..*" Linking : acts as consumer
+User "1" -- "0..*" Linking : requests
+User "1" -- "0..*" Linking : responds
+
+' Order relationships
+Linking "1" *-- "0..*" Order : contains
+User "1" -- "0..*" Order : places
+Order "1" *-- "1..*" OrderProduct : contains
+Product "1" -- "0..*" OrderProduct : used in
+
+' Chat relationships
+Linking "1" *-- "0..*" Chat : has
+Order "1" -- "0..1" Chat : has specific chat
+Chat "1" *-- "0..*" Message : contains
+User "1" -- "0..*" Message : sends
+
+' Complaint relationships
+Order "1" -- "0..1" Complaint : may have
+User "1" -- "0..*" Complaint : raises
+User "1" -- "0..*" Complaint : handles
+Complaint "1" *-- "1..*" ComplaintHistory : logs
+
+@enduml
+
